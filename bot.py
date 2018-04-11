@@ -1,14 +1,19 @@
+#load thư viện thời gian
 import time
 #load thư viện bitmex
 import bitmex
 
 
 #Tạo kết nối tới server bằng API
-
 client = bitmex.bitmex()
 
+#nếu chạy ở chế độ live thực thì dùng lệnh này
+#client = bitmex.bitmex(test=False, api_key=<API_KEY>, api_secret=<API_SECRET>)
+
+
+#test trong vòng 10 cặp lệnh
+#count là biến đến số cặp lệnh đã mở-đóng thành công
 count = 0
-i = 0
 while (count<10):
 	#load bảng orderbook - cả ask và bid
 	result = client.Quote.Quote_get(symbol="XBTUSD", reverse=True, count=1).result()
@@ -31,8 +36,7 @@ while (count<10):
 	client = bitmex.bitmex(api_key=API_KEY, api_secret=API_SECRET)
 	client.Order.Order_new(symbol='XBTUSD', orderQty=100, price=entryPrice).result()
 
-	#test trong vòng 10 lệnh
-	
+	# j là biến để xác định xem đã kiểm tra giá mới newPrice bao nhiêu lần	
 	j = 0
 	#biến check xem đã đóng được cặp lệnh chưa, True là vẫn phải check tiếp, False là không cần check nữa
 	check = True
@@ -43,27 +47,25 @@ while (count<10):
 		localtime = time.asctime( time.localtime(time.time()) )
 
 	#check giá mới	
-		j= j +1 
 		result = client.Quote.Quote_get(symbol="XBTUSD", reverse=True, count=1).result()
 		newPrice = result[0][0]['bidPrice']
-
-	#so sánh giá mới và giá cũ. Nếu đạt target thì sẽ chốt lời
+		j= j +1 
+	#so sánh giá mới và giá cũ. 
 		deta = newPrice - entryPrice
-
+	#Nếu đạt target +5  thì sẽ chốt lời hoặc lỗ quá -5 thì cắt lỗ
 		if deta>5 or deta <-5: 
 			pass
+			#thực hiện lệnh bán
 			client.Order.Order_new(symbol='XBTUSD', orderQty=-100, price=newPrice).result()
 			check=False
-			i = i + 1
-
+			count = count + 1
+		#in ra thông tin
 		print (localtime, " Entry Price:",entryPrice," New Price:",newPrice,"Change:",deta,"Check giá lần:",j)
-	#chờ 5s sau rồi check lại
+	
+		#chờ 10s sau rồi check lại
 		time.sleep(10) 
 
 
-	print ("==>Số lệnh đã done: ",i)
+	print ("==>Số cặp lệnh đã hoàn thành: ",count)
 	
-	count = count + 1
-
-	#nếu chạy ở chế độ live thực thì dùng lệnh này
-	#client = bitmex.bitmex(test=False, api_key=<API_KEY>, api_secret=<API_SECRET>)
+	
